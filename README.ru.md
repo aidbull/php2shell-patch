@@ -107,7 +107,7 @@ tail -f /root/php2shell.log
 
 | Сообщение | Что значит / что делать |
 |---|---|
-| `fix is not in your repositories yet; nothing changed` | Зеркало или вендор отстают. Ничего не тронуто. Примените [митигацию](#фикса-ещё-нет) и повторите позже. |
+| `fix is not in your repositories yet; nothing changed` | Зеркало или вендор отстают. Ничего не тронуто. Примените [митигацию](#фикса-ещё-нет) и повторите позже. Сначала проверьте два момента: (1) вывод `apt-get update` выше на `Failed to fetch` / `503` (PPA в день патча перегружены, списки тогда старые), (2) не берётся ли `noble-security` / `bookworm-security` с зеркала хостера (например `mirror.hetzner.com`), которое отстаёт от официального пула. Ubuntu сама рекомендует брать security-pocket напрямую с `security.ubuntu.com`: добавьте его как deb822-источник и повторите `--check`. |
 | `upgrade would INSTALL new PHP packages` | Мета-пакет тянет другую ветку PHP. Скрипт остановился. Смотрите `apt-get -s install --only-upgrade …`; обычно помогает hold/удаление безверсионных `php*` мета-пакетов. |
 | `still running old PHP after …` + PID | Octane, свои демоны, воркер, запущенный руками. Перезапустить через supervisor/systemd, затем `--check`. |
 | `reload of php8.3-fpm failed` / `-t failed` | Проблема в конфиге пула. `journalctl -u php8.3-fpm`, `php-fpm8.3 -t`. FPM продолжает работать на старом бинарнике. |

@@ -106,7 +106,7 @@ the old PHP binary. Anything else is `1`, with the reason printed.
 
 | Message | Meaning / what to do |
 |---|---|
-| `fix is not in your repositories yet; nothing changed` | Mirror or vendor is behind. Nothing was touched. Apply the [mitigation](#no-fix-available-yet) and re-run later. |
+| `fix is not in your repositories yet; nothing changed` | Mirror or vendor is behind. Nothing was touched. Apply the [mitigation](#no-fix-available-yet) and re-run later. Check two things first: (1) `apt-get update` output above for `Failed to fetch` / `503` (PPAs get overloaded on patch day; the lists are then stale), (2) whether your `noble-security` / `bookworm-security` comes from a hosting mirror (e.g. `mirror.hetzner.com`) that lags the official pocket. Ubuntu's own advice is to take the security pocket from `security.ubuntu.com` directly; add it as a deb822 source and re-run `--check`. |
 | `upgrade would INSTALL new PHP packages` | A meta package wants to pull in another PHP branch. Script stops. Check `apt-get -s install --only-upgrade …`, usually you hold or remove the unversioned `php*` meta packages. |
 | `still running old PHP after …` + PIDs | Octane, custom daemons, a worker started by hand. Restart via supervisor/systemd, then `--check`. |
 | `reload of php8.3-fpm failed` / `-t failed` | Config problem in a pool. `journalctl -u php8.3-fpm`, `php-fpm8.3 -t`. FPM is still serving on the old binary. |

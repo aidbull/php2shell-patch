@@ -138,8 +138,15 @@ mapfile -t COMMONS < <(common_pkgs)
 [[ ${#COMMONS[@]} -gt 0 ]] || die "no PHP packages found via $PM"
 
 log "Refreshing package metadata ($PM)"
-if [[ $PM == apt ]]; then apt-get update -qq || warn "apt-get update reported errors, continuing with cached lists"
-else dnf -q makecache --refresh >/dev/null || warn "dnf makecache reported errors, continuing with cached metadata"; fi
+STALE_INDEX=0
+if [[ $PM == apt ]]; then
+  # apt-get update exits 0 even when a source failed ("W: Failed to fetch"); catch that, it means stale lists
+  upd=$(apt-get update -qq 2>&1) || STALE_INDEX=1
+  [[ -z $upd ]] || { printf '%s\n' "$upd" >&2; grep -q 'Failed to fetch' <<<"$upd" && STALE_INDEX=1; }
+  [[ $STALE_INDEX -eq 0 ]] || warn "apt-get update could not refresh some sources (mirror down / 503): candidates below may be STALE"
+else
+  dnf -q makecache --refresh >/dev/null || { STALE_INDEX=1; warn "dnf makecache reported errors: candidates below may be STALE"; }
+fi
 
 if [[ $PM == apt ]]; then
   held=$(apt-mark showhold | grep -E '^(php|libapache2-mod-php)' || true)
@@ -190,6 +197,8 @@ for line in "${COMMONS[@]}"; do
   [[ $(installed_status "$pkg" "$br") == VULNERABLE ]] && ALL_FIXED=0
 done
 if [[ $UPDATES -eq 0 && $ALL_FIXED -eq 0 ]]; then
+  [[ $STALE_INDEX -eq 0 ]] || warn "package index could not be refreshed: the fix may already be published, retry when the source is reachable"
+  [[ $PM != apt ]] || warn "if you use a distro mirror, it may lag the official security pocket: compare with 'apt-cache policy php*-common' after adding security.ubuntu.com / security.debian.org"
   die "fix is not in your repositories yet; nothing changed. Re-run later."
 fi
 
